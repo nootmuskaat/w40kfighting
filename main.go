@@ -22,6 +22,8 @@ const (
 	Invalid // No valid sequences with this prefix remain
 )
 
+// When evaluating which action to take, return the next action
+// that should be considered
 func nextAction(a action) action {
 	switch a {
 	case RegularAttack:
@@ -78,6 +80,8 @@ func (f fighter) copy() fighter {
 	return f
 }
 
+// Ensure that, given the current roll situation, the fighter is capable
+// of undertaking that action provided
 func (f fighter) checkApplyAction(a action) bool {
 	switch a {
 	case RegularAttack, RegularBlock:
@@ -91,10 +95,12 @@ func (f fighter) checkApplyAction(a action) bool {
 	}
 }
 
+// The total number of (active) turns remaining for the fighter
 func (f fighter) actionsRemaining() int {
 	return f.roll.hits + f.roll.crits
 }
 
+// Update the fighter as if they have had `action` applied to them by the `other` fighter
 func (f *fighter) applyAction(a action, other fighter) {
 	if a == RegularAttack {
 		if other.weapon.normal >= f.health {
@@ -121,6 +127,7 @@ func (f *fighter) applyAction(a action, other fighter) {
 	}
 }
 
+// Update the fighter as if they have performed `action`
 func (f *fighter) performAction(a action) {
 	if a == RegularAttack || a == RegularBlock {
 		f.roll.hits--
@@ -145,6 +152,7 @@ func (f fighter) String() string {
 	)
 }
 
+// Given two fighters, check which action(s) may be taken
 func runPossiblities(f1, f2 *fighter, previous, current sequence) sequence {
 	var f *fighter
 	var o *fighter
@@ -260,16 +268,16 @@ func checkAllPossibilities(f1, f2 fighter) []sequence {
 
 func main() {
 	f1 := fighter{
-		health:     20,
+		health:     8,
 		initiative: 1,
 		weapon:     weapon{3, 4},
-		roll:       roll{2, 1},
+		roll:       roll{2, 0},
 	}
 	f2 := fighter{
-		health:     20,
+		health:     4,
 		initiative: 0,
 		weapon:     weapon{3, 4},
-		roll:       roll{1, 2},
+		roll:       roll{1, 0},
 	}
 	checkAllPossibilities(f1, f2)
 	// for _, possible := range allPossibilities {
