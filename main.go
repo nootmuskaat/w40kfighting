@@ -9,14 +9,6 @@ import (
 type action int
 type sequence []action
 
-func (s sequence) String() string {
-	ss := make([]string, len(s))
-	for i, action := range s {
-		ss[i] = action.String()
-	}
-	return strings.Join(ss, " -> ")
-}
-
 
 const (
 	/* player actions */
@@ -215,6 +207,28 @@ func max(a, b int) int {
 	return b
 }
 
+func formatResult(s sequence, f1, f2 *fighter) string {
+	s1 := make([]string, 0, len(s)+1)
+	s2 := make([]string, 0, len(s)+1)
+	for i, action := range s {
+		if i % 2 == 0 {
+			s1 = append(s1, action.String())
+			s2 = append(s2, "")
+		} else {
+			s2 = append(s2, action.String())
+			s1 = append(s1, "")
+		}
+	}
+	s1 = append(s1, fmt.Sprintf("❤️ %d", f1.health))
+	s2 = append(s2, fmt.Sprintf("❤️ %d", f2.health))
+
+	f1s := strings.Join(s1, "\t")
+	f2s := strings.Join(s2, "\t")
+
+	return strings.Join([]string{f1s, f2s}, "\n")
+
+}
+
 func checkAllPossibilities(f1, f2 fighter) []sequence {
 	var fr1 fighter
 	var fr2 fighter
@@ -232,7 +246,9 @@ func checkAllPossibilities(f1, f2 fighter) []sequence {
 		// fmt.Println(" final", seq)
 		// fmt.Println()
 		if seq[len(seq)-1] != Invalid {
+			fmt.Println(formatResult(seq, &fr1, &fr2))
 			allSequences = append(allSequences, seq)
+			fmt.Println("------------------------------")
 		}
 		if f2.initiative > f1.initiative {
 			fr2, fr1 = f1.copy(), f2.copy()
@@ -248,20 +264,21 @@ func checkAllPossibilities(f1, f2 fighter) []sequence {
 
 func main() {
 	f1 := fighter {
-		health: 100,
+		health: 20,
 		initiative: 1,
-		weapon: weapon { 3, 5 },
+		weapon: weapon { 3, 4 },
 		roll: roll {2, 1},
 	}
 	f2 := fighter {
-		health: 100,
-		initiative: 1,
-		weapon: weapon { 3, 5 },
-		roll: roll {2, 2},
+		health: 20,
+		initiative: 0,
+		weapon: weapon { 3, 4 },
+		roll: roll {1, 2},
 	}
-	allPossibilities := checkAllPossibilities(f1, f2)
-	for _, possible := range allPossibilities {
-		fmt.Println(possible)
-	}
+	checkAllPossibilities(f1, f2)
+	// for _, possible := range allPossibilities {
+	// 	fmt.Println(possible)
+	// 	fmt.Println("--------------------------------")
+	// }
 }
 
