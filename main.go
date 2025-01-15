@@ -2,10 +2,21 @@ package main
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 )
 
 type action int
 type sequence []action
+
+func (s sequence) String() string {
+	ss := make([]string, len(s))
+	for i, action := range s {
+		ss[i] = action.String()
+	}
+	return strings.Join(ss, " -> ")
+}
+
 
 const (
 	/* player actions */
@@ -45,11 +56,16 @@ func (a action) String() string {
 		return "🔥🗡️"
 	case CriticalBlock:
 		return "🔥🛡️"
+	case Pass:
+		return "🫥"
 	case Dead:
 		return "💀"
+	case EOS:
+		return "✅"
 	default:
-		return "-"
+		return "⛔"
 	}
+
 }
 
 type weapon struct {
@@ -67,6 +83,26 @@ type fighter struct {
 	roll roll
 }
 
+func (f fighter) copy() fighter {
+	return f
+}
+
+func (f fighter) checkApplyAction(a action) bool {
+	switch a {
+	case RegularAttack, RegularBlock:
+		return f.roll.hits > 0
+	case CriticalAttack, CriticalBlock:
+		return f.roll.crits > 0
+	case Pass:
+		return f.roll.hits + f.roll.crits == 0
+	default:
+		return true
+	}
+}
+
+func (f fighter) actionsRemaining() int {
+	return f.roll.hits + f.roll.crits
+}
 
 func (f *fighter) applyAction(a action, other fighter) {
 	if a == RegularAttack {
@@ -120,14 +156,56 @@ func (f fighter) String() string {
 	)
 }
 
-func runPossiblities(f1, f2 fighter, allSequences *[]sequence, current *sequence) {
-	var f fighter
-	if len(*current) % 2 == 0 {
-		f = f1
+func runPossiblities(f1, f2 *fighter, previous, current sequence) sequence {
+	var f *fighter
+	var o *fighter
+	idx := len(current)
+	if idx % 2 == 0 {
+		f, o = f1, f2
 	} else {
-		f = f2
+		f, o = f2, f1
 	}
-	f.performAction(Pass)
+	if f.health == 0 {
+		return append(current, Dead)
+	} else if f.actionsRemaining() + o.actionsRemaining() == 0 {
+		return append(current, EOS)
+	}
+	if previous == nil || len(previous) <= idx + 1 {
+		for a := RegularAttack; a != Invalid; a = nextAction(a) {
+			if ! f.checkApplyAction(a) {
+				continue
+			}
+			current = append(current, a)
+			f.performAction(a)
+			o.applyAction(a, *f)
+			// fmt.Println("current", current)
+			return runPossiblities(f1, f2, previous, current)
+		}
+	} else {
+		switch previous[idx+1] {
+		case Dead, EOS, Invalid:
+			for a := nextAction(previous[idx]); a != Invalid; a = nextAction(a) {
+				if ! f.checkApplyAction(a) {
+					continue
+				}
+				current = append(current, a)
+				f.performAction(a)
+				o.applyAction(a, *f)
+				// fmt.Println("current", current)
+				return runPossiblities(f1, f2, previous, current)
+			}
+		default:
+			a := previous[idx]
+			current = append(current, a)
+			f.performAction(a)
+			o.applyAction(a, *f)
+			// fmt.Println("current", current)
+			return runPossiblities(f1, f2, previous, current)
+
+		}
+
+	}
+	return append(current, Invalid)
 }
 
 func max(a, b int) int {
@@ -138,18 +216,52 @@ func max(a, b int) int {
 }
 
 func checkAllPossibilities(f1, f2 fighter) []sequence {
+	var fr1 fighter
+	var fr2 fighter
 	if f2.initiative > f1.initiative {
-		f2, f1 = f1, f2
+		fr2, fr1 = f1.copy(), f2.copy()
+	} else {
+		fr1, fr2 = f1.copy(), f2.copy()
 	}
 	allSequences := make([]sequence, 0, 8)
-	maxPossibleSequence := max(f1.roll.hits + f1.roll.crits, f2.roll.hits + f2.roll.crits) * 2 + 1
-	currentSequence := make(sequence, 0, maxPossibleSequence)
-	runPossiblities(f1, f2, &allSequences, &currentSequence)
+	var previous sequence = nil
+	endState := sequence{Invalid}
+
+	for seq := runPossiblities(&fr1, &fr2, previous, make(sequence, 0)); ! slices.Equal(seq, endState); {
+
+		// fmt.Println(" final", seq)
+		// fmt.Println()
+		if seq[len(seq)-1] != Invalid {
+			allSequences = append(allSequences, seq)
+		}
+		if f2.initiative > f1.initiative {
+			fr2, fr1 = f1.copy(), f2.copy()
+		} else {
+			fr1, fr2 = f1.copy(), f2.copy()
+		}
+		seq = runPossiblities(&fr1, &fr2, seq, make(sequence, 0))
+	}
 
 	return allSequences
 }
 
 
 func main() {
+	f1 := fighter {
+		health: 100,
+		initiative: 1,
+		weapon: weapon { 3, 5 },
+		roll: roll {2, 1},
+	}
+	f2 := fighter {
+		health: 100,
+		initiative: 1,
+		weapon: weapon { 3, 5 },
+		roll: roll {2, 2},
+	}
+	allPossibilities := checkAllPossibilities(f1, f2)
+	for _, possible := range allPossibilities {
+		fmt.Println(possible)
+	}
 }
 
