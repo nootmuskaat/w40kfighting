@@ -9,18 +9,17 @@ import (
 type action int
 type sequence []action
 
-
 const (
 	/* player actions */
 	RegularAttack action = iota
 	RegularBlock
 	CriticalAttack
 	CriticalBlock
-	Pass  // the player cannot take any action
+	Pass // the player cannot take any action
 	/* control signals */
 	Dead
-	EOS  // End of Sequence
-	Invalid  // No valid sequences with this prefix remain
+	EOS     // End of Sequence
+	Invalid // No valid sequences with this prefix remain
 )
 
 func nextAction(a action) action {
@@ -69,10 +68,10 @@ type roll struct {
 }
 
 type fighter struct {
-	health int
+	health     int
 	initiative int
-	weapon weapon
-	roll roll
+	weapon     weapon
+	roll       roll
 }
 
 func (f fighter) copy() fighter {
@@ -86,7 +85,7 @@ func (f fighter) checkApplyAction(a action) bool {
 	case CriticalAttack, CriticalBlock:
 		return f.roll.crits > 0
 	case Pass:
-		return f.roll.hits + f.roll.crits == 0
+		return f.roll.hits+f.roll.crits == 0
 	default:
 		return true
 	}
@@ -122,7 +121,6 @@ func (f *fighter) applyAction(a action, other fighter) {
 	}
 }
 
-
 func (f *fighter) performAction(a action) {
 	if a == RegularAttack || a == RegularBlock {
 		f.roll.hits--
@@ -130,7 +128,6 @@ func (f *fighter) performAction(a action) {
 		f.roll.crits--
 	}
 }
-
 
 func newFighter(health, initiative, normal, critical int) fighter {
 	return fighter{health, initiative, weapon{normal, critical}, *new(roll)}
@@ -152,19 +149,19 @@ func runPossiblities(f1, f2 *fighter, previous, current sequence) sequence {
 	var f *fighter
 	var o *fighter
 	idx := len(current)
-	if idx % 2 == 0 {
+	if idx%2 == 0 {
 		f, o = f1, f2
 	} else {
 		f, o = f2, f1
 	}
 	if f.health == 0 {
 		return append(current, Dead)
-	} else if f.actionsRemaining() + o.actionsRemaining() == 0 {
+	} else if f.actionsRemaining()+o.actionsRemaining() == 0 {
 		return append(current, EOS)
 	}
-	if previous == nil || len(previous) <= idx + 1 {
+	if previous == nil || len(previous) <= idx+1 {
 		for a := RegularAttack; a != Invalid; a = nextAction(a) {
-			if ! f.checkApplyAction(a) {
+			if !f.checkApplyAction(a) {
 				continue
 			}
 			current = append(current, a)
@@ -177,7 +174,7 @@ func runPossiblities(f1, f2 *fighter, previous, current sequence) sequence {
 		switch previous[idx+1] {
 		case Dead, EOS, Invalid:
 			for a := nextAction(previous[idx]); a != Invalid; a = nextAction(a) {
-				if ! f.checkApplyAction(a) {
+				if !f.checkApplyAction(a) {
 					continue
 				}
 				current = append(current, a)
@@ -211,7 +208,7 @@ func formatResult(s sequence, f1, f2 *fighter) string {
 	s1 := make([]string, 0, len(s)+1)
 	s2 := make([]string, 0, len(s)+1)
 	for i, action := range s {
-		if i % 2 == 0 {
+		if i%2 == 0 {
 			s1 = append(s1, action.String())
 			s2 = append(s2, "")
 		} else {
@@ -241,7 +238,7 @@ func checkAllPossibilities(f1, f2 fighter) []sequence {
 	var previous sequence = nil
 	endState := sequence{Invalid}
 
-	for seq := runPossiblities(&fr1, &fr2, previous, make(sequence, 0)); ! slices.Equal(seq, endState); {
+	for seq := runPossiblities(&fr1, &fr2, previous, make(sequence, 0)); !slices.Equal(seq, endState); {
 
 		// fmt.Println(" final", seq)
 		// fmt.Println()
@@ -261,19 +258,18 @@ func checkAllPossibilities(f1, f2 fighter) []sequence {
 	return allSequences
 }
 
-
 func main() {
-	f1 := fighter {
-		health: 20,
+	f1 := fighter{
+		health:     20,
 		initiative: 1,
-		weapon: weapon { 3, 4 },
-		roll: roll {2, 1},
+		weapon:     weapon{3, 4},
+		roll:       roll{2, 1},
 	}
-	f2 := fighter {
-		health: 20,
+	f2 := fighter{
+		health:     20,
 		initiative: 0,
-		weapon: weapon { 3, 4 },
-		roll: roll {1, 2},
+		weapon:     weapon{3, 4},
+		roll:       roll{1, 2},
 	}
 	checkAllPossibilities(f1, f2)
 	// for _, possible := range allPossibilities {
@@ -281,4 +277,3 @@ func main() {
 	// 	fmt.Println("--------------------------------")
 	// }
 }
-

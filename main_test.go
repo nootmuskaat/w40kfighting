@@ -5,17 +5,17 @@ import (
 )
 
 func TestBasicFighterApplyingActions(t *testing.T) {
-	f1 := fighter {
-		health: 100,
+	f1 := fighter{
+		health:     100,
 		initiative: 1,
-		weapon: weapon { 3, 5 },
-		roll: roll {2, 1},
+		weapon:     weapon{3, 5},
+		roll:       roll{2, 1},
 	}
-	f2 := fighter {
-		health: 100,
+	f2 := fighter{
+		health:     100,
 		initiative: 1,
-		weapon: weapon { 3, 5 },
-		roll: roll {2, 2},
+		weapon:     weapon{3, 5},
+		roll:       roll{2, 2},
 	}
 
 	f1.applyAction(RegularAttack, f2)
@@ -45,11 +45,11 @@ func TestBasicFighterApplyingActions(t *testing.T) {
 }
 
 func TestBasicFighterPerformingActions(t *testing.T) {
-	f := fighter {
-		health: 100,
+	f := fighter{
+		health:     100,
 		initiative: 1,
-		weapon: weapon { 3, 5 },
-		roll: roll {10, 10},
+		weapon:     weapon{3, 5},
+		roll:       roll{10, 10},
 	}
 
 	f.performAction(RegularAttack)
